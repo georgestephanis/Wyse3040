@@ -1,0 +1,18 @@
+#!/bin/sh
+# One-time setup on a freshly flashed unit.
+set -eu
+say() { echo "wyse-firstboot: $*" | tee /dev/kmsg; }
+
+ssh-keygen -A
+
+# Grow the root partition + filesystem to fill the disk.
+src=$(readlink -f "$(findmnt -no SOURCE /)")
+part=$(basename "$src")
+disk=$(lsblk -no PKNAME "$src")
+num=$(cat "/sys/class/block/$part/partition")
+growpart "/dev/$disk" "$num" || true   # exit 1 just means "already full size"
+resize2fs "$src"
+say "root filesystem is now $(df -h --output=size / | tail -1 | tr -d ' ')"
+
+mkdir -p /var/lib/wyse
+touch /var/lib/wyse/firstboot-done

@@ -1,0 +1,7 @@
+# Test harness: native-arch container running an emulated x86-64 UEFI machine.
+FROM debian:trixie
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      qemu-system-x86 qemu-utils ovmf socat \
+ && rm -rf /var/lib/apt/lists/*

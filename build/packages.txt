@@ -1,0 +1,77 @@
+# Packages installed on top of Debian's minbase variant.
+# Recommends are NOT installed, so everything needed is listed explicitly.
+# One package per line; comments and blank lines are ignored.
+
+# --- Base system ---
+systemd-sysv
+udev
+dbus
+dbus-user-session
+libpam-systemd
+polkitd
+systemd-timesyncd
+systemd-zram-generator
+tzdata
+locales
+keyboard-configuration
+sudo
+less
+nano
+ca-certificates
+iproute2
+iputils-ping
+procps
+psmisc
+fdisk
+gdisk
+cloud-guest-utils
+e2fsprogs
+dosfstools
+
+# --- Kernel + firmware ---
+# Cherry Trail's HD 400 needs no i915 firmware (no GuC/HuC/DMC), so no
+# firmware-intel-graphics. Debian drives Cherry Trail audio with the SST
+# driver (SOF for BYT/CHT is disabled), so no firmware-sof-signed either.
+# dpkg-filter.cfg trims these packages to the 3040's chips.
+linux-image-amd64
+initramfs-tools
+firmware-intel-sound
+firmware-realtek
+
+# --- Networking / remote admin ---
+network-manager
+wpasupplicant
+openssh-server
+
+# --- Graphics ---
+xserver-xorg-core
+xserver-xorg-input-libinput
+xinit
+xkb-data
+x11-xkb-utils
+
+# Window manager: JWM (taskbar + menu; unlike Openbox it pulls in no
+# Python or Ghostscript). x11-xserver-utils is left out because it drags
+# in cpp; blanking and monitor layout are set in xorg.conf.d instead.
+jwm
+xterm
+fonts-dejavu-core
+adwaita-icon-theme
+librsvg2-common
+# VA-API: only i965 supports Cherry Trail (intel-media/iHD starts at Broadwell).
+i965-va-driver
+vainfo
+
+# --- Audio ---
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
+alsa-ucm-conf
+alsa-utils
+
+# --- Remote desktop client ---
+remmina
+remmina-plugin-rdp
+remmina-plugin-vnc
+remmina-plugin-spice

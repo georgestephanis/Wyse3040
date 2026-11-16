@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!-- Kiosk session for the Wyse 3040: Remmina, kept running, plus a small
+     taskbar for switching between connection windows. -->
+<JWM>
+  <StartupCommand>sh -c 'while :; do remmina; sleep 2; done'</StartupCommand>
+
+  <!-- Right-click the desktop, or the "Menu" button on the taskbar. -->
+  <RootMenu onroot="3">
+    <Program label="Remmina">remmina</Program>
+    <Program label="Terminal">xterm</Program>
+    <Separator/>
+    <Program label="Reboot">systemctl reboot</Program>
+    <Program label="Power off">systemctl poweroff</Program>
+  </RootMenu>
+
+  <Tray x="0" y="-1" height="28" autohide="off">
+    <TrayButton label="Menu">root:3</TrayButton>
+    <Spacer width="4"/>
+    <TaskList maxwidth="280"/>
+    <Clock format="%a %e %b  %H:%M"/>
+  </Tray>
+
+  <Desktops width="1" height="1">
+    <Background type="solid">#1f2430</Background>
+  </Desktops>
+
+  <WindowStyle><Font>DejaVu Sans-10</Font></WindowStyle>
+  <TrayStyle><Font>DejaVu Sans-10</Font></TrayStyle>
+  <MenuStyle><Font>DejaVu Sans-11</Font></MenuStyle>
+
+  <FocusModel>click</FocusModel>
+  <Key mask="A" key="Tab">nextstacked</Key>
+  <Key mask="A" key="F4">close</Key>
+</JWM>

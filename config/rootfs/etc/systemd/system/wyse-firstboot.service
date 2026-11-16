@@ -1,0 +1,13 @@
+[Unit]
+Description=Wyse 3040 first-boot setup (grow root filesystem, SSH host keys)
+ConditionPathExists=!/var/lib/wyse/firstboot-done
+After=local-fs.target
+Before=ssh.service ssh.socket
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/wyse-firstboot
+
+[Install]
+WantedBy=multi-user.target
