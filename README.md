@@ -8,8 +8,9 @@ connections to your servers. It can also stream games over your LAN with Steam L
 PlayStation Remote Play. The image is trimmed to the 3040's own hardware. This repo also has a
 3D-printable [USB-C power mod](hardware/usb-c-power/).
 
-> **Status:** the image builds, and it boots to the Remmina kiosk session under QEMU (`make test`). It
-> hasn't been verified on real 3040 hardware yet. See [Not done yet](#not-done-yet).
+> **Status:** the image builds, and it boots to the Remmina kiosk session under QEMU (`make test`). The
+> installer ISO passes an unattended install in QEMU (`make test-installer`). None of it has been
+> verified on real 3040 hardware yet. See [Not done yet](#not-done-yet).
 
 ---
 
@@ -147,8 +148,9 @@ the device itself.
 
 - **p1:** a 256 MiB EFI system partition (`WYSE-ESP`). It holds a standalone GRUB at the
   removable-media path, `\EFI\BOOT\BOOTX64.EFI`, so it boots without any firmware boot entry.
-- **p2:** the ext4 root partition (`wyse-root`). It's 3 GiB in the image, which keeps flashing quick.
-  On first boot it grows to fill the eMMC.
+- **p2:** the ext4 root partition (`wyse-root`). In the image it's only the installed size plus some
+  headroom (about 4.5 GiB with the streaming apps; see `WYSE_ROOT_MB`), which keeps flashing quick. On
+  first boot it grows to fill the eMMC.
 - **First boot:** SSH host keys and the machine ID are generated then, so each unit flashed from the same
   image gets its own. The hostname is the same on every unit (`wyse3040` by default); change
   `WYSE_HOSTNAME` per build if you run several.
@@ -218,11 +220,11 @@ Silicon, the builder runs as an emulated `linux/amd64` container, and a build ta
 
 | Path                      | What |
 |---------------------------|------|
-| `Makefile`                | `make image`, `make test`, `make clean` |
+| `Makefile`                | `make image`, `make test`, `make test-installer`, `make clean` |
 | `build/packages.txt`      | Everything installed on top of Debian minbase. Recommends are off, so list it explicitly |
 | `build/dpkg-filter.cfg`   | Paths dpkg never installs: docs, translations, and drivers and firmware the 3040 can't use |
-| `build/build-image.sh`    | Bootstrap → ext4 + ESP → GPT image → xz |
-| `build/customize.sh`      | Runs inside the new rootfs: users, locale, sshd, services, driver check, initramfs |
+| `build/build-image.sh`    | Bootstrap → ext4 + ESP → GPT image → xz → installer ISO |
+| `build/customize.sh`      | Runs inside the new rootfs: users, locale, streaming apps, sshd, services, driver check, initramfs |
 | `build/installer/`        | The installer ISO's boot menu and initramfs: the `wyseinstall` boot script, hook and config |
 | `build/test-qemu.sh`      | The QEMU boot test |
 | `build/test-installer.sh` | The QEMU installer test |
@@ -304,6 +306,12 @@ pick either one.
   shell on tty1.
 - **Two monitors:** edit `/etc/X11/xorg.conf.d/20-wyse-displays.conf`, or its copy under
   `config/rootfs/` in the repo. It assumes the outputs are named `DP-1` and `DP-2`.
+- **Audio output:** there's no output picker in the kiosk yet. Over SSH, `wpctl status` lists the
+  headphone jack and DisplayPort outputs, and `wpctl set-default <id>` picks one.
+- **HDMI screens:** use a DisplayPort-to-HDMI adapter that says it carries audio. An active adapter is
+  the safe choice, since it works whether or not the ports support passive (DP++) adapters. Typical
+  1080p or 4K30 active adapters run on power from the DisplayPort socket. Connect the screen before
+  powering on, so its audio output is detected.
 - **If X dies,** tty1 drops to a shell as `wyse`.
 - **Installing packages:** package lists are removed from the image to save space, so run
   `sudo apt update` first.
