@@ -38,7 +38,34 @@ passwd -l root
 groups=$(for g in audio video render input; do getent group "$g" >/dev/null && printf '%s,' "$g"; done)
 useradd -m -s /bin/bash -G "${groups%,}" wyse
 passwd -l wyse
+# --- Streaming apps from Flathub (WYSE_FLATPAKS) ----------------------------
+menu=""
+if [ -n "${WYSE_FLATPAKS:-}" ]; then
+  flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+  # Only English translations, to keep the runtimes' locale data small.
+  flatpak config --system --set languages en
+  # shellcheck disable=SC2086
+  flatpak install --system --noninteractive --assumeyes flathub $WYSE_FLATPAKS
+  # Hardware video decoding inside the apps: Flatpak doesn't pull the Intel
+  # VA-API extension (which has i965, the driver Cherry Trail needs) on its
+  # own. Install it for each freedesktop runtime branch in use; the KDE
+  # runtime is built on the same branch and picks it up too.
+  for branch in $(flatpak list --system --runtime --columns=ref | sed -n 's|^org\.freedesktop\.Platform/x86_64/||p' | sort -u); do
+    flatpak install --system --noninteractive --assumeyes flathub "runtime/org.freedesktop.Platform.VAAPI.Intel/x86_64/$branch"
+  done
+  for app in $WYSE_FLATPAKS; do
+    case "$app" in
+      com.valvesoftware.SteamLink)      label="Steam Link" ;;
+      com.moonlight_stream.Moonlight)   label="Moonlight" ;;
+      io.github.streetpea.Chiaki4deck)  label="PlayStation Remote Play (chiaki-ng)" ;;
+      *)                                label="$app" ;;
+    esac
+    menu="$menu<Program label=\"$label\">flatpak run $app</Program>"
+  done
+fi
+
 cp -a /usr/local/share/wyse/home/. /home/wyse/
+sed -i "s|<!-- @STREAMING_APPS@ -->|$menu|" /home/wyse/.jwmrc
 chown -R wyse:wyse /home/wyse
 # Fail the build on a broken window-manager config rather than on the device.
 su -s /bin/sh wyse -c 'jwm -p'
@@ -109,6 +136,13 @@ virtio_pci
 virtio_blk
 EOF
 update-initramfs -u -k all
+
+# --- Installer initramfs (for the installer ISO; not part of the image) --------
+# Built from this image's own kernel and modules, with a separate config dir
+# (build/installer/initramfs). build-image.sh copies it out of the rootfs.
+mkdir -p /tmp/wyse-installer-out
+mkinitramfs -d "$STAGE/installer-initramfs" -o /tmp/wyse-installer-out/installer.img "$kver"
+cp "/boot/vmlinuz-$kver" /tmp/wyse-installer-out/vmlinuz
 
 # --- Per-device state is generated on first boot -------------------------------
 rm -f /etc/ssh/ssh_host_*

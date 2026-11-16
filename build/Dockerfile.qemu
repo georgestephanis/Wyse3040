@@ -3,5 +3,5 @@ FROM debian:trixie
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      qemu-system-x86 qemu-utils ovmf socat \
+      qemu-system-x86 qemu-utils ovmf socat xorriso dosfstools mtools \
  && rm -rf /var/lib/apt/lists/*

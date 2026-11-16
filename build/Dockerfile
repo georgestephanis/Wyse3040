@@ -7,7 +7,7 @@ RUN apt-get update \
       mmdebstrap ca-certificates \
       dosfstools mtools e2fsprogs fdisk \
       grub-efi-amd64-bin grub-common \
-      xz-utils gpg \
+      xz-utils gpg xorriso \
  && rm -rf /var/lib/apt/lists/*
 
 # apt hands mmdebstrap a two-digit file descriptor (`cat >&13`), which dash

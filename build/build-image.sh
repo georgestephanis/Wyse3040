@@ -41,6 +41,8 @@ log "Staging config overlay"
 cp -a "$SRC/config/rootfs" "$WORK/overlay"
 chown -R 0:0 "$WORK/overlay"
 cp "$SRC/build/customize.sh" "$WORK/stage/customize.sh"
+cp -a "$SRC/build/installer/initramfs" "$WORK/stage/installer-initramfs"
+chown -R 0:0 "$WORK/stage"
 if [ -s "$LOCAL/authorized_keys" ]; then
   cp "$LOCAL/authorized_keys" "$WORK/stage/authorized_keys"
 fi
@@ -61,7 +63,8 @@ mmdebstrap \
   --customize-hook='mkdir -p "$1/tmp/wyse-stage"' \
   --customize-hook="sync-in $WORK/stage /tmp/wyse-stage" \
   --customize-hook='chroot "$1" /bin/bash /tmp/wyse-stage/customize.sh' \
-  --customize-hook='rm -rf "$1/tmp/wyse-stage"' \
+  --customize-hook="copy-out /tmp/wyse-installer-out $WORK" \
+  --customize-hook='rm -rf "$1/tmp/wyse-stage" "$1/tmp/wyse-installer-out"' \
   "$WYSE_SUITE" "$WORK/rootfs" \
   "deb $WYSE_MIRROR $WYSE_SUITE $COMPONENTS" \
   "deb $WYSE_MIRROR $WYSE_SUITE-updates $COMPONENTS" \
@@ -82,6 +85,9 @@ for f in vmlinuz initrd.img; do
 done
 
 used_mb=$(du -sm "$WORK/rootfs" | cut -f1)
+if [ "$WYSE_ROOT_MB" = auto ]; then
+  WYSE_ROOT_MB=$(( (used_mb * 120 / 100 + 512 + 255) / 256 * 256 ))
+fi
 log "Root filesystem uses ${used_mb} MiB (partition: ${WYSE_ROOT_MB} MiB)"
 if [ "$used_mb" -gt $((WYSE_ROOT_MB * 85 / 100)) ]; then
   echo "ERROR: rootfs too large for WYSE_ROOT_MB=$WYSE_ROOT_MB" >&2
@@ -133,6 +139,29 @@ sfdisk --list "$IMG"
 
 log "Compressing"
 xz -T0 -6 -k "$IMG"
-( cd "$OUT" && sha256sum wyse3040.img wyse3040.img.xz > SHA256SUMS )
+
+# --- Installer ISO -------------------------------------------------------------
+# A UEFI-bootable ISO (works from Ventoy, or written directly to a USB stick).
+# Its menu boots the image's own kernel with the installer initramfs, which
+# then finds /live/wyse3040.img.xz on the USB drive itself (see
+# build/installer/initramfs/scripts/wyseinstall). The build ID ties the boot
+# menu to this ISO's image, so an older installer on the same drive is ignored.
+log "Building installer ISO"
+ISO="$OUT/wyse3040-installer.iso"
+BUILD_ID="$(date -u +%Y%m%dT%H%M%SZ)-$(od -An -N4 -tx1 /dev/urandom | tr -d ' \n')"
+rm -f "$ISO"
+mkdir -p "$WORK/iso/live" "$WORK/iso/boot/grub"
+cp "$IMG.xz" "$WORK/iso/live/wyse3040.img.xz"
+sha256sum < "$IMG" | cut -d' ' -f1 > "$WORK/iso/live/wyse-image.sha256"
+stat -c %s "$IMG" > "$WORK/iso/live/wyse-image.size"
+echo "$BUILD_ID" > "$WORK/iso/live/build-id"
+cp "$WORK/wyse-installer-out/vmlinuz"       "$WORK/iso/live/vmlinuz"
+cp "$WORK/wyse-installer-out/installer.img" "$WORK/iso/live/installer.img"
+sed "s/@BUILD_ID@/$BUILD_ID/g" "$SRC/build/installer/grub.cfg" > "$WORK/iso/boot/grub/grub.cfg"
+log "Installer build ID: $BUILD_ID"
+grub-mkrescue -o "$ISO" "$WORK/iso" -- -volid WYSE3040 2>&1 | grep -v '^xorriso : UPDATE' || true
+[ -s "$ISO" ] || { echo "ERROR: grub-mkrescue produced no ISO" >&2; exit 1; }
+
+( cd "$OUT" && sha256sum wyse3040.img wyse3040.img.xz wyse3040-installer.iso > SHA256SUMS )
 ls -lh "$OUT"
-log "Done: out/wyse3040.img(.xz)"
+log "Done: out/wyse3040.img(.xz), out/wyse3040-installer.iso"

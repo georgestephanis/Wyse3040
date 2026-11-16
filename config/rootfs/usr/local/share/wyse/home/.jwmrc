@@ -7,6 +7,7 @@
   <!-- Right-click the desktop, or the "Menu" button on the taskbar. -->
   <RootMenu onroot="3">
     <Program label="Remmina">remmina</Program>
+    <!-- @STREAMING_APPS@ -->
     <Program label="Terminal">xterm</Program>
     <Separator/>
     <Program label="Reboot">systemctl reboot</Program>

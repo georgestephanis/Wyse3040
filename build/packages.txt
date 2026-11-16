@@ -75,3 +75,11 @@ remmina
 remmina-plugin-rdp
 remmina-plugin-vnc
 remmina-plugin-spice
+
+# --- Game streaming (apps come from Flathub; see WYSE_FLATPAKS) ---
+flatpak
+steam-devices
+
+# --- Installer ISO support (initramfs tools for the installer) ---
+busybox
+xz-utils

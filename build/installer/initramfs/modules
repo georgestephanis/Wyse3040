@@ -1,0 +1,25 @@
+# Loaded early, on top of MODULES=most: the eMMC, USB keyboards and storage,
+# the filesystems the installer reads its image from (ISO 9660, plus
+# exFAT/FAT/NTFS for Ventoy drives, with the codepages FAT needs), and virtio
+# for the QEMU test.
+sdhci_acpi
+mmc_block
+xhci_pci
+ehci_pci
+usbhid
+hid_generic
+virtio_pci
+virtio_blk
+usb_storage
+uas
+sd_mod
+sr_mod
+loop
+isofs
+exfat
+vfat
+ntfs3
+nls_cp437
+nls_iso8859_1
+nls_utf8
+nls_ascii

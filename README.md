@@ -4,7 +4,8 @@ A reproducible Linux image that turns a **Dell Wyse 3040** thin client into a de
 client.
 
 It's a minimal Debian 13 system that boots straight into **Remmina**, for RDP, VNC, SPICE and SSH
-connections to your servers. The image is trimmed to the 3040's own hardware. This repo also has a
+connections to your servers. It can also stream games over your LAN with Steam Link, Moonlight and
+PlayStation Remote Play. The image is trimmed to the 3040's own hardware. This repo also has a
 3D-printable [USB-C power mod](hardware/usb-c-power/).
 
 > **Status:** the image builds, and it boots to the Remmina kiosk session under QEMU (`make test`). It
@@ -113,8 +114,21 @@ variant, and confirm it with a multimeter.** The wrong voltage can damage the 30
     doesn't use SOF on Cherry Trail.
   - **Initramfs:** only the drivers needed to find the root filesystem.
   - **Safety check:** the build fails if any driver the 3040 needs stops resolving.
+- **Game streaming:** three apps from Flathub, installed at build time. Each gets a menu entry.
+  - **Steam Link** (`com.valvesoftware.SteamLink`) streams from Steam on a PC on your LAN, like the old
+    Steam Link box.
+  - **Moonlight** (`com.moonlight_stream.Moonlight`) streams from Sunshine or NVIDIA GameStream hosts.
+  - **chiaki-ng** (`io.github.streetpea.Chiaki4deck`) does PlayStation 4/5 Remote Play. It needs a
+    one-time pairing: enter your PSN account ID, then the PIN the console shows.
+
+  Pick which ones you want with `WYSE_FLATPAKS` in `config/build.env`; leave it empty for none.
+  `steam-devices` provides the device permissions for Steam controllers and other gamepads. The apps
+  bring their own runtimes, which take up most of the image's size. Flatpak doesn't install the Intel
+  VA-API driver extension on its own, so the build adds `org.freedesktop.Platform.VAAPI.Intel` (i965)
+  for each runtime branch. Smooth streaming depends on the HD 400 decoding H.264 in hardware through
+  it, which hasn't been checked on a real 3040 yet.
 - **Graphics:** `i915` with the modesetting X driver. VA-API uses `i965-va-driver`, the Intel VA-API
-  driver that supports Cherry Trail; `intel-media` starts at Broadwell.
+  driver that supports Cherry Trail; `intel-media` doesn't cover it.
 - **No `x11-xserver-utils`,** because it drags in a C preprocessor. Screen blanking is turned off and the
   two-monitor layout is set in `/etc/X11/xorg.conf.d/` instead.
 - **Audio:** PipeWire, for RDP audio redirection to DisplayPort audio or the headphone jack.
@@ -122,7 +136,9 @@ variant, and confirm it with a multimeter.** The wrong voltage can damage the 30
   PipeWire.
 - **eMMC care:** the journal lives in RAM, the filesystem is mounted `noatime`, there's no swap partition,
   and `/tmp` is on tmpfs, which is Debian 13's default.
-- **Footprint:** about 840 MiB installed, and the compressed image is about 250 MB.
+- **Footprint:** about 3.3 GB installed with all three streaming apps, or about 840 MiB with
+  `WYSE_FLATPAKS` empty. That leaves roughly 4 GB free on an 8 GB unit. The compressed image is about
+  870 MB (about 250 MB without the apps), and the installer ISO is about 920 MB.
 
 ### The disk image
 
@@ -167,8 +183,14 @@ Silicon, the builder runs as an emulated `linux/amd64` container, and a build ta
    make image
    ```
 
-   This writes `out/wyse3040.img` (raw), `out/wyse3040.img.xz`, `out/SHA256SUMS` and
-   `out/size-report.txt` (the largest packages and directories). Settings such as hostname, timezone,
+   This writes:
+   - `out/wyse3040-installer.iso`: the installer, for Ventoy or a USB stick
+   - `out/wyse3040.img`: the raw disk image
+   - `out/wyse3040.img.xz`: the same image, compressed
+   - `out/SHA256SUMS`
+   - `out/size-report.txt`: the largest packages and directories
+
+   Settings such as hostname, timezone,
    locale, keyboard layout and partition sizes are in `config/build.env`. Override them in
    `local/build.env`, which is gitignored like the rest of `local/` and `out/`.
 
@@ -182,6 +204,16 @@ Silicon, the builder runs as an emulated `linux/amd64` container, and a build ta
    8 GB virtual disk. It waits for a login prompt, then saves a screenshot to `out/test/screen.png` and the
    serial console log to `out/test/serial.log`.
 
+   To test the installer ISO:
+
+   ```bash
+   make test-installer
+   ```
+
+   This runs an unattended install onto a blank 8 GB virtual disk, boots the installed disk, and then
+   boots the ISO itself as a USB stick. QEMU has no eMMC, so in that last run the installer should
+   refuse to write. Logs and screenshots go to `out/test-installer/`.
+
 ### What goes where
 
 | Path                      | What |
@@ -191,18 +223,61 @@ Silicon, the builder runs as an emulated `linux/amd64` container, and a build ta
 | `build/dpkg-filter.cfg`   | Paths dpkg never installs: docs, translations, and drivers and firmware the 3040 can't use |
 | `build/build-image.sh`    | Bootstrap → ext4 + ESP → GPT image → xz |
 | `build/customize.sh`      | Runs inside the new rootfs: users, locale, sshd, services, driver check, initramfs |
+| `build/installer/`        | The installer ISO's boot menu and initramfs: the `wyseinstall` boot script, hook and config |
 | `build/test-qemu.sh`      | The QEMU boot test |
+| `build/test-installer.sh` | The QEMU installer test |
 | `build/Dockerfile*`       | Builder and test containers |
 | `config/build.env`        | Default build settings |
 | `config/rootfs/`          | Files copied verbatim onto the device |
 | `config/rootfs/usr/local/share/wyse/home/` | The kiosk user's dotfiles (`.xinitrc`, `.jwmrc`) |
 
-## Flashing the eMMC
+## Installing on the 3040
 
-The eMMC is soldered to the board, so you write to it from a Linux system booted on the 3040 itself:
+The eMMC is soldered to the board, so the image gets written from a system booted on the 3040 itself.
+The installer ISO does that for you.
+
+### With the installer ISO (recommended)
+
+`out/wyse3040-installer.iso` is a small UEFI-bootable installer with the image built in. Copy it onto a
+[Ventoy](https://www.ventoy.net/) drive, or write it to a USB stick on its own.
 
 1. In the BIOS, enable USB boot and disable Secure Boot. See [Firmware / BIOS](#firmware--bios).
-2. Boot a live Linux USB stick on the 3040. A Debian live "standard" image works.
+2. Boot the 3040 from the stick (F12). From Ventoy, pick `wyse3040-installer.iso`, and boot it in normal
+   mode.
+3. Choose **Install the Wyse 3040 thin-client image**.
+4. The installer finds its image on the USB drive by itself, then finds the internal eMMC. It only
+   writes to a built-in eMMC, never to USB drives or SD cards. It shows the machine, the target and the
+   sizes, then asks you to type `YES`.
+5. It writes the image, reads it back to verify the checksum, and asks you to remove the stick.
+   Press Enter to power off.
+6. Power on. The first boot grows the root filesystem, then Remmina comes up.
+
+The menu also has a **Rescue shell** entry that writes nothing, plus **Power off**. Nothing starts on
+its own: the menu waits until you choose.
+
+How it works: the ISO boots the image's own kernel with a small installer initramfs
+(`build/installer/`). The installer then looks through the USB drives for the ISO's
+`/live/wyse3040.img.xz` in either of two places:
+- **The ISO filesystem itself,** when the ISO was written straight to a stick.
+- **An `.iso` file on the drive,** which it loop-mounts. That's the Ventoy case. It works because Ventoy
+  only takes over its data partition when the booted system carries Ventoy's own boot hook, and this
+  installer doesn't.
+
+A build ID on the boot menu's kernel command line has to match the one inside the ISO, so an older
+Wyse installer ISO on the same drive is never used by mistake. The image is streamed from the drive
+rather than loaded into RAM, so it can be larger than the 3040's 2 GB of memory.
+
+To write the ISO to a plain USB stick from a Mac, replace `N` with the stick's disk number from
+`diskutil list external`. **Double-check the number, because `dd` overwrites that disk without asking.**
+
+```bash
+sudo dd if=out/wyse3040-installer.iso of=/dev/rdiskN bs=4m
+```
+
+### Manually, from a live Linux system
+
+1. In the BIOS, enable USB boot and disable Secure Boot. See [Firmware / BIOS](#firmware--bios).
+2. Boot a live Linux USB stick on the 3040. A Debian or Fedora live image works.
 3. Get `wyse3040.img.xz` onto the unit, and write it to `/dev/mmcblk0`. Not `mmcblk0boot0`, and not the USB
    stick. Either:
    - from a second USB stick:
@@ -223,8 +298,8 @@ pick either one.
 
 ### On the device
 
-- **Menu:** right-click the desktop, or click **Menu** on the taskbar, for Remmina, Terminal, Reboot and
-  Power off. Alt+Tab switches windows, and Alt+F4 closes one.
+- **Menu:** right-click the desktop, or click **Menu** on the taskbar, for Remmina, the streaming apps,
+  Terminal, Reboot and Power off. Alt+Tab switches windows, and Alt+F4 closes one.
 - **Debugging:** the second GRUB entry, *verbose, no X*, boots without the graphical session and leaves a
   shell on tty1.
 - **Two monitors:** edit `/etc/X11/xorg.conf.d/20-wyse-displays.conf`, or its copy under
@@ -236,11 +311,13 @@ pick either one.
 ## Not done yet
 
 - **Real hardware:** none of this has run on a 3040 yet. Still to check: eMMC boot, first-boot resize,
-  `DP-1`/`DP-2` output names, analog and DisplayPort audio, VA-API decoding, and `poweroff`.
+  `DP-1`/`DP-2` output names, analog and DisplayPort audio, VA-API decoding (Remmina and the streaming
+  apps), game controllers, and `poweroff`.
+- **Installer under real Ventoy:** QEMU tests an ISO file on a FAT32 drive. A real exFAT or NTFS Ventoy
+  drive hasn't been tried yet.
 - **Wi-Fi:** no Wi-Fi firmware is included yet, pending a unit that has Wi-Fi.
 - **Peripherals:** USB smart card support (`pcscd`) and USB redirection.
 - **Lockdown:** a read-only root filesystem, and no shell when X exits.
-- **Install:** a self-flashing USB installer, so you don't need a separate live system.
 
 ## Layout
 
@@ -248,8 +325,9 @@ pick either one.
 Wyse3040/
 ├── README.md
 ├── LICENSE            # GPL-3.0 (hardware/ is CERN-OHL-S-2.0)
-├── Makefile           # make image | make test | make clean
+├── Makefile           # make image | make test | make test-installer | make clean
 ├── build/             # builder/test containers and scripts
+│   └── installer/     # installer ISO: boot menu + initramfs
 ├── config/
 │   ├── build.env      # default build settings
 │   └── rootfs/        # overlay copied onto the device

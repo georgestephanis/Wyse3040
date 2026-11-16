@@ -1,0 +1,202 @@
+# shellcheck shell=sh
+# Wyse 3040 installer.
+#
+# initramfs-tools' /init sources this file when the kernel is booted with
+# `boot=wyseinstall`, and then calls mountroot(). Instead of mounting a root
+# filesystem, mountroot() finds the disk image on the boot media, writes it
+# to the internal eMMC, verifies it, and powers off.
+#
+# The image is read from the installer ISO's /live directory, which can be
+#   - the ISO filesystem itself (ISO written straight to a USB stick or CD), or
+#   - an .iso file on a USB drive's filesystem (Ventoy and similar), which is
+#     loop-mounted. This works under Ventoy because Ventoy only takes over its
+#     data partition when the booted distro carries Ventoy's own hook.
+# A build ID on the kernel command line has to match /live/build-id, so an
+# older installer ISO on the same drive is never picked up by mistake.
+#
+# Kernel parameters:
+#   wyse.build=ID      build ID of this installer (set by the ISO's grub.cfg)
+#   wyse.shell         rescue shell only; write nothing
+#   wyse.target=/dev/X write to X instead of auto-detecting the eMMC (testing)
+#   wyse.yes           don't ask for confirmation (testing)
+
+WYSE_MEDIA=/run/wyse-media
+WYSE_ISO=/run/wyse-iso
+
+# /init calls these around mountroot(); there's nothing to mount.
+mount_top() { :; }
+mount_premount() { :; }
+mount_bottom() { :; }
+
+# Print a kernel parameter's value ("1" for a bare flag); fail if it's absent.
+wyse_arg() {
+	for _a in $(cat /proc/cmdline); do
+		case "$_a" in
+			"$1") echo 1; return 0 ;;
+			"$1"=*) echo "${_a#*=}"; return 0 ;;
+		esac
+	done
+	return 1
+}
+
+wyse_off() {
+	sync
+	poweroff -f
+	# Some 3040s reboot instead of powering off.
+	sleep 5
+	reboot -f
+}
+
+wyse_fail() {
+	echo
+	echo "  ERROR: $*"
+	echo
+	echo "  Press Enter for a shell. Type 'poweroff -f' there to switch off."
+	read -r _
+	sh
+	wyse_off
+}
+
+# Print the internal eMMC's device node. eMMC reports type "MMC"; SD cards
+# report "SD" and USB sticks aren't mmcblk devices at all.
+wyse_find_emmc() {
+	_n=0
+	while [ "$_n" -lt 20 ]; do
+		for _d in /sys/block/mmcblk*; do
+			case "${_d##*/}" in
+				mmcblk[0-9] | mmcblk[0-9][0-9]) ;;
+				*) continue ;; # mmcblk0boot0, mmcblk0rpmb, ...
+			esac
+			if [ "$(cat "$_d/device/type" 2>/dev/null)" = MMC ]; then
+				echo "/dev/${_d##*/}"
+				return 0
+			fi
+		done
+		sleep 1
+		_n=$((_n + 1))
+	done
+	return 1
+}
+
+# Is $1 (a mounted ISO filesystem) this build's installer? Prints its /live dir.
+wyse_is_ours() {
+	[ -f "$1/live/build-id" ] && [ -f "$1/live/wyse3040.img.xz" ] || return 1
+	[ "$(cat "$1/live/build-id")" = "$WYSE_BUILD" ] || return 1
+	echo "$1/live"
+}
+
+# Find this build's /live directory on any USB drive / CD / virtio disk.
+# Prints the directory and leaves its filesystems mounted.
+wyse_find_media() {
+	for _m in loop isofs nls_ascii nls_cp437 nls_iso8859_1 nls_utf8 exfat vfat ntfs3 ext4 virtio_blk sr_mod usb_storage uas; do
+		modprobe -q "$_m" 2>/dev/null || true
+	done
+	mkdir -p "$WYSE_MEDIA" "$WYSE_ISO"
+	_round=0
+	while [ "$_round" -lt 15 ]; do
+		for _dev in /dev/sr[0-9]* /dev/sd[a-z]* /dev/vd[a-z]*; do
+			[ -b "$_dev" ] || continue
+			mount -o ro "$_dev" "$WYSE_MEDIA" 2>/dev/null || continue
+			# ISO written straight to the stick: the ISO filesystem itself.
+			if wyse_is_ours "$WYSE_MEDIA"; then
+				echo "$_dev" >/run/wyse-source
+				return 0
+			fi
+			# Ventoy and the like: an .iso file on the drive's filesystem.
+			find "$WYSE_MEDIA" -maxdepth 3 -iname '*.iso' 2>/dev/null >/run/wyse-isos
+			while IFS= read -r _iso; do
+				mount -o ro,loop "$_iso" "$WYSE_ISO" 2>/dev/null || continue
+				if wyse_is_ours "$WYSE_ISO"; then
+					echo "$_dev: ${_iso#"$WYSE_MEDIA"/}" >/run/wyse-source
+					return 0
+				fi
+				umount "$WYSE_ISO"
+			done </run/wyse-isos
+			umount "$WYSE_MEDIA"
+		done
+		sleep 1
+		_round=$((_round + 1))
+	done
+	return 1
+}
+
+mountroot() {
+	set -o pipefail 2>/dev/null || true
+
+	echo
+	echo "  Dell Wyse 3040 thin-client installer"
+	echo "  ===================================="
+	echo
+
+	if wyse_arg wyse.shell >/dev/null; then
+		echo "  Rescue shell. Nothing will be written. Type 'poweroff -f' to switch off."
+		sh
+		wyse_off
+	fi
+
+	WYSE_BUILD=$(wyse_arg wyse.build) ||
+		wyse_fail "No wyse.build= on the kernel command line. Boot the Install entry from the menu."
+	echo "  Looking for the installer image on the USB drive..."
+	live=$(wyse_find_media) ||
+		wyse_fail "Couldn't find this installer's image (build $WYSE_BUILD) on any USB drive. Nothing was written."
+	img="$live/wyse3040.img.xz"
+	want_size=$(cat "$live/wyse-image.size")
+	want_sha=$(cat "$live/wyse-image.sha256")
+	echo "  Found it on $(cat /run/wyse-source)"
+
+	target=$(wyse_arg wyse.target) || target=""
+	if [ -z "$target" ]; then
+		echo "  Looking for the internal eMMC..."
+		target=$(wyse_find_emmc) ||
+			wyse_fail "No internal eMMC found. Nothing was written. This installer only writes to a built-in eMMC, like the Wyse 3040's."
+	fi
+	[ -b "$target" ] || wyse_fail "$target is not a block device. Nothing was written."
+
+	bytes=$(($(cat "/sys/class/block/${target##*/}/size") * 512))
+	[ "$bytes" -ge "$want_size" ] ||
+		wyse_fail "$target is too small ($((bytes / 1048576)) MiB) for the image ($((want_size / 1048576)) MiB). Nothing was written."
+
+	product=$(cat /sys/class/dmi/id/product_name 2>/dev/null)
+	echo "  Machine:  ${product:-unknown}"
+	echo "  Target:   $target ($((bytes / 1000000)) MB)"
+	echo "  Image:    $((want_size / 1048576)) MiB"
+	case "$product" in
+		*3040*) ;;
+		*) echo; echo "  WARNING: this doesn't look like a Wyse 3040." ;;
+	esac
+	echo
+	echo "  Everything on $target will be ERASED."
+
+	if ! wyse_arg wyse.yes >/dev/null; then
+		printf '  Type YES (in capitals) to continue, or anything else to cancel: '
+		read -r answer
+		if [ "$answer" != YES ]; then
+			echo
+			echo "  Cancelled. Nothing was written. Powering off..."
+			sleep 3
+			wyse_off
+		fi
+	fi
+
+	echo
+	echo "  Writing the image. This takes a few minutes..."
+	/bin/xz-full -dc "$img" | /bin/dd-full of="$target" bs=4M conv=fsync status=progress ||
+		wyse_fail "Writing failed. The eMMC may hold a partial image; run the installer again."
+
+	echo "  Verifying..."
+	sync
+	echo 3 >/proc/sys/vm/drop_caches
+	got=$(head -c "$want_size" "$target" | sha256sum | cut -d' ' -f1)
+	[ "$got" = "$want_sha" ] ||
+		wyse_fail "Verification failed (checksum mismatch). Run the installer again."
+
+	echo "wyse-installer: verified $target"
+	echo
+	echo "  Done. The image is installed and verified."
+	if wyse_arg wyse.yes >/dev/null; then
+		wyse_off
+	fi
+	echo "  Remove the USB stick, then press Enter to power off."
+	read -r _
+	wyse_off
+}
