@@ -37,7 +37,9 @@ prints them crisply.
 - **Voltage:** the board's output voltage is set by the solder-jumper pads on its back, marked **1 / 2 / 3**
   and **H / L**. Check the board's listing for which combination gives which voltage.
 - **Charger:** use one that supports USB-C PD at your 3040's voltage and can supply enough current, with some
-  margin for USB peripherals.
+  margin for USB peripherals. 12 V units shipped with a 24 W (12 V, 2 A) adapter, so look for a charger
+  whose label lists **12 V at 2 A or more**. 12 V is optional in USB PD: many chargers only offer 5, 9,
+  15 and 20 V, and won't work for a 12 V unit.
 
 > [!WARNING]
 > **Test the voltage before you connect it to the 3040.**
