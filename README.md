@@ -309,8 +309,8 @@ pick either one.
 - **Audio output:** there's no output picker in the kiosk yet. Over SSH, `wpctl status` lists the
   headphone jack and DisplayPort outputs, and `wpctl set-default <id>` picks one.
 - **HDMI screens:** the ports are DP++ (dual-mode), so a plain passive DisplayPort-to-HDMI adapter or
-  cable works and carries audio. Passive adapters reach 1080p60 or 4K30, which is as much as the HD 400
-  drives anyway. Connect the screen before powering on, so its audio output is detected.
+  cable works and carries audio. Passive adapters reach 1080p60 or 4K30, which is plenty for the HD 400
+  in practice. Connect the screen before powering on, so its audio output is detected.
 - **If X dies,** tty1 drops to a shell as `wyse`.
 - **Installing packages:** package lists are removed from the image to save space, so run
   `sudo apt update` first.
