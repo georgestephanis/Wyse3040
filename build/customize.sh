@@ -103,7 +103,7 @@ systemctl mask systemd-firstboot.service
 kver=$(ls /usr/lib/modules | sort -V | tail -1)
 needed="i915 r8169 sdhci_acpi mmc_block ext4 vfat
         xhci_pci usb_storage uas sd_mod usbhid hid_generic
-        snd_intel_sst_acpi snd_soc_sst_byt_cht_es8316 snd_hdmi_lpe_audio
+        snd_intel_sst_acpi snd_soc_sst_cht_bsw_rt5672 snd_soc_rt5670 snd_hdmi_lpe_audio
         virtio_pci virtio_blk"
 missing=""
 for m in $needed; do

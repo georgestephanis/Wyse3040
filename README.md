@@ -31,10 +31,10 @@ Home Assistant, Pi-hole, kiosk and print/scan servers.
 | RAM        | **2 GB** DDR3L-1600, soldered, single channel. Not upgradeable |
 | Storage    | **8 GB** or **16 GB** eMMC, soldered (`/dev/mmcblk0`). No SATA or M.2 storage slot |
 | Ethernet   | 1× Gigabit, Realtek RTL8111/8168 (`r8169`) |
-| Wi-Fi/BT   | Optional on some SKUs; many units have none |
+| Wi-Fi/BT   | Optional on some SKUs; many units have none. Units without it still have the empty M.2 slot (`WLAN1`) on the underside of the board |
 | Video out  | 2× DisplayPort 1.2, dual-mode (DP++; marked on the case), dual display, with audio |
 | USB        | Front: 1× USB 3.0, 1× USB 2.0. Rear: 2× USB 2.0 |
-| Audio      | Front 3.5 mm combo jack. Cherry Trail SST audio with an Everest ES8316 codec |
+| Audio      | Front 3.5 mm combo jack, plus board pads for an internal speaker (SPK1) and mic (MIC2). Cherry Trail SST audio with a Realtek ALC5672 (RT5672) codec |
 | Power      | DC barrel input, **5 V or 12 V depending on the variant**. Check the label on the case or the original adapter. Draws roughly 2–4 W idle and ~7 W under load |
 | Cooling    | Passive (fanless). Throttles under sustained full load |
 | Firmware   | Dell UEFI (64-bit), with Secure Boot |
@@ -48,6 +48,8 @@ Approximate figures and SKU-dependent items vary between units. See
 - **F2** opens BIOS setup and **F12** opens the one-time boot menu. Press either right after power-on;
   the window is short, so tap repeatedly.
 - The BIOS admin password is often set. The widely reported Dell factory default is **`Fireport`**.
+  The underside of the board also has two small buttons labelled `PWCLR1` and `CMCLR1`, which by their
+  names should clear the password and the CMOS settings. That hasn't been tested here.
 - To boot your own media:
   1. Under *Boot Sequence*, enable **USB Boot**.
   2. Disable **Secure Boot**. This image's bootloader isn't signed.
@@ -60,8 +62,9 @@ Approximate figures and SKU-dependent items vary between units. See
   `poweroff` on your unit before relying on it unattended.
 - **eMMC:** it's small and slow. 8 GB fills up fast, and the chip can't be replaced, so keep heavy write
   churn off it. This image keeps the journal in RAM and has no swap partition.
-- **Analog audio** uses the ES8316 codec. Debian's kernel drives it with the Atom SST driver
-  (`snd_soc_sst_byt_cht_es8316`), which needs `fw_sst_22a8.bin` plus UCM profiles (`alsa-ucm-conf`).
+- **Analog audio** uses the Realtek RT5672 codec. Debian's kernel drives it with the Atom SST driver
+  (`snd_soc_sst_cht_bsw_rt5672`, codec driver `snd_soc_rt5670`, which has a Dell Wyse 3040 quirk). It
+  needs `fw_sst_22a8.bin` plus the `cht-bsw-rt5672` UCM profile from `alsa-ucm-conf`.
   DisplayPort audio goes through `snd_hdmi_lpe_audio`.
 - **2 GB of RAM** rules out heavy desktops and big containers. zram swap helps.
 - **No AVX.** Some prebuilt binaries won't run, including some ML runtimes, newer MongoDB builds, and some
