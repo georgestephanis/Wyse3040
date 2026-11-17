@@ -32,7 +32,7 @@ Home Assistant, Pi-hole, kiosk and print/scan servers.
 | Storage    | **8 GB** or **16 GB** eMMC, soldered (`/dev/mmcblk0`). No SATA or M.2 storage slot |
 | Ethernet   | 1× Gigabit, Realtek RTL8111/8168 (`r8169`) |
 | Wi-Fi/BT   | Optional on some SKUs; many units have none |
-| Video out  | 2× DisplayPort 1.2 (dual display, DP audio) |
+| Video out  | 2× DisplayPort 1.2, dual-mode (DP++; marked on the case), dual display, with audio |
 | USB        | Front: 1× USB 3.0, 1× USB 2.0. Rear: 2× USB 2.0 |
 | Audio      | Front 3.5 mm combo jack. Cherry Trail SST audio with an Everest ES8316 codec |
 | Power      | DC barrel input, **5 V or 12 V depending on the variant**. Check the label on the case or the original adapter. Draws roughly 2–4 W idle and ~7 W under load |
@@ -308,10 +308,9 @@ pick either one.
   `config/rootfs/` in the repo. It assumes the outputs are named `DP-1` and `DP-2`.
 - **Audio output:** there's no output picker in the kiosk yet. Over SSH, `wpctl status` lists the
   headphone jack and DisplayPort outputs, and `wpctl set-default <id>` picks one.
-- **HDMI screens:** use a DisplayPort-to-HDMI adapter that says it carries audio. An active adapter is
-  the safe choice, since it works whether or not the ports support passive (DP++) adapters. Typical
-  1080p or 4K30 active adapters run on power from the DisplayPort socket. Connect the screen before
-  powering on, so its audio output is detected.
+- **HDMI screens:** the ports are DP++ (dual-mode), so a plain passive DisplayPort-to-HDMI adapter or
+  cable works and carries audio. Passive adapters reach 1080p60 or 4K30, which is as much as the HD 400
+  drives anyway. Connect the screen before powering on, so its audio output is detected.
 - **If X dies,** tty1 drops to a shell as `wyse`.
 - **Installing packages:** package lists are removed from the image to save space, so run
   `sudo apt update` first.
