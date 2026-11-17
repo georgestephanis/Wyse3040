@@ -238,6 +238,31 @@ Silicon, the builder runs as an emulated `linux/amd64` container, and a build ta
 The eMMC is soldered to the board, so the image gets written from a system booted on the 3040 itself.
 The installer ISO does that for you.
 
+### Before you flash: backing up ThinOS (optional)
+
+Flashing replaces whatever is on the eMMC, usually Wyse ThinOS. If you might want it back, save a copy
+first. Dell's downloads for the 3040 don't make a simple way back: ThinOS 9 needs a paid activation,
+the `*_wnos` files are updates that only a running ThinOS can install, and a bare reinstall needs Dell's
+Windows USB imaging tool. An image of your own eMMC also keeps your unit's exact edition (standard or
+PCoIP) and settings.
+
+1. Update the BIOS first, while ThinOS can still install Dell's package. See
+   [Firmware / BIOS](#firmware--bios).
+2. Boot a live Linux USB stick on the 3040, plug in a second drive with about 4 GB free, and run:
+
+   ```bash
+   sudo dd if=/dev/mmcblk0 bs=4M status=progress | xz -T0 > /path/to/drive/wyse3040-thinos-backup.img.xz
+   ```
+
+3. To restore it later, boot the live stick again and run:
+
+   ```bash
+   xzcat /path/to/drive/wyse3040-thinos-backup.img.xz | sudo dd of=/dev/mmcblk0 bs=4M conv=fsync status=progress
+   ```
+
+Dell's ThinOS and BIOS downloads aren't redistributable, so keep them out of this repo. `.gitignore`
+already excludes `hardware/bios-updates/` and `hardware/*.zip`.
+
 ### With the installer ISO (recommended)
 
 `out/wyse3040-installer.iso` is a small UEFI-bootable installer with the image built in. Copy it onto a
