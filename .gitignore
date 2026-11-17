@@ -1,2 +1,5 @@
 /out/
 /local/
+.DS_Store
+# Dell BIOS downloads: not ours to redistribute
+/hardware/bios-updates/
