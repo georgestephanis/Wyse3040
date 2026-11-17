@@ -31,7 +31,7 @@ Home Assistant, Pi-hole, kiosk and print/scan servers.
 | RAM        | **2 GB** DDR3L-1600, soldered, single channel. Not upgradeable |
 | Storage    | **8 GB** or **16 GB** eMMC, soldered (`/dev/mmcblk0`). No SATA or M.2 storage slot |
 | Ethernet   | 1× Gigabit, Realtek RTL8111/8168 (`r8169`) |
-| Wi-Fi/BT   | Optional on some SKUs; many units have none. Units without it still have the empty M.2 slot (`WLAN1`) on the underside of the board |
+| Wi-Fi/BT   | Optional on some SKUs; many units have none. Units without it still have an empty M.2 slot, labelled `WLAN1`, on the underside of the board (key not yet confirmed) |
 | Video out  | 2× DisplayPort 1.2, dual-mode (DP++; marked on the case), dual display, with audio |
 | USB        | Front: 1× USB 3.0, 1× USB 2.0. Rear: 2× USB 2.0 |
 | Audio      | Front 3.5 mm combo jack, plus board pads for an internal speaker (SPK1) and mic (MIC2). Cherry Trail SST audio with a Realtek ALC5672 (RT5672) codec |
