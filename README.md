@@ -350,8 +350,8 @@ pick either one.
 
 - **Real hardware:** confirmed on a 3040 (BIOS 1.2.5): eMMC boot (HS200, ~35 MB/s write), first-boot
   resize, 1080p60 on a 4K TV through a passive DP-to-HDMI adapter (the port shows up as `HDMI-1`), HDMI
-  audio (LPE device 0), and VA-API with `i965` inside the Flatpak sandbox. Still to check: the analog
-  headphone jack, game controllers, `poweroff`, and actually streaming in Moonlight/Steam Link/chiaki-ng.
+  audio (LPE device 0), VA-API with `i965` inside the Flatpak sandbox, and Power off from the menu. Still to check: the analog
+  headphone jack, game controllers, and actually streaming in Moonlight/Steam Link/chiaki-ng.
 - **Installer under real Ventoy:** QEMU tests an ISO file on a FAT32 drive. A real exFAT or NTFS Ventoy
   drive hasn't been tried yet.
 - **Wi-Fi:** no Wi-Fi firmware is included yet, pending a unit that has Wi-Fi.
