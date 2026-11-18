@@ -9,8 +9,9 @@ PlayStation Remote Play. The image is trimmed to the 3040's own hardware. This r
 3D-printable [USB-C power mod](hardware/usb-c-power/).
 
 > **Status:** the image builds, and it boots to the Remmina kiosk session under QEMU (`make test`). The
-> installer ISO passes an unattended install in QEMU (`make test-installer`). None of it has been
-> verified on real 3040 hardware yet. See [Not done yet](#not-done-yet).
+> installer ISO passes an unattended install in QEMU (`make test-installer`). On a real 3040 the
+> installer flashes the eMMC and the unit boots to the kiosk desktop at 1080p on a 4K TV; the
+> streaming apps and Remmina connections haven't been tried there yet. See [Not done yet](#not-done-yet).
 
 ---
 

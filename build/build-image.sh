@@ -70,12 +70,13 @@ mmdebstrap \
   "deb $WYSE_MIRROR $WYSE_SUITE-updates $COMPONENTS" \
   "deb http://security.debian.org/debian-security $WYSE_SUITE-security $COMPONENTS"
 
-# What's taking up space, for trimming further.
+# What's taking up space, for trimming further. awk, not head: head exits early,
+# sort dies of SIGPIPE, and pipefail + set -e kills the build (exit 141).
 {
   echo "== Largest packages (installed KiB)"
-  chroot "$WORK/rootfs" dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -rn | head -40
+  chroot "$WORK/rootfs" dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -rn | awk 'NR <= 40'
   echo; echo "== Largest directories (MiB)"
-  du -xm --max-depth=4 "$WORK/rootfs/usr" | sort -rn | head -40 | sed "s|$WORK/rootfs||"
+  du -xm --max-depth=4 "$WORK/rootfs/usr" | sort -rn | awk 'NR <= 40' | sed "s|$WORK/rootfs||"
   echo; echo "== /boot"; ls -l "$WORK/rootfs/boot"
 } > "$OUT/size-report.txt"
 
