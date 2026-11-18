@@ -74,7 +74,7 @@ mmdebstrap \
 # sort dies of SIGPIPE, and pipefail + set -e kills the build (exit 141).
 {
   echo "== Largest packages (installed KiB)"
-  chroot "$WORK/rootfs" dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -rn | awk 'NR <= 40'
+  dpkg-query --admindir="$WORK/rootfs/var/lib/dpkg" -Wf '${Installed-Size}\t${Package}\n' | sort -rn | awk 'NR <= 40'
   echo; echo "== Largest directories (MiB)"
   du -xm --max-depth=4 "$WORK/rootfs/usr" | sort -rn | awk 'NR <= 40' | sed "s|$WORK/rootfs||"
   echo; echo "== /boot"; ls -l "$WORK/rootfs/boot"
