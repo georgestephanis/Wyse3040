@@ -279,7 +279,8 @@ already excludes `hardware/bios-updates/` and `hardware/*.zip`.
    writes to a built-in eMMC, never to USB drives or SD cards. It shows the machine, the target and the
    sizes, then asks you to type `YES`.
 5. It writes the image, reads it back to verify the checksum, and asks you to remove the stick.
-   Press Enter to power off.
+   Press Enter to power off. On a real 3040 the write and the verify together took a little over
+   10 minutes, writing at about 8 MB/s.
 6. Power on. The first boot grows the root filesystem, then Remmina comes up.
 
 The menu also has a **Rescue shell** entry that writes nothing, plus **Power off**. Nothing starts on
