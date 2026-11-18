@@ -394,7 +394,7 @@ Wyse3040/
 
 ---
 
-## Licence
+## License
 
 Copyright © 2026 George Stephanis.
 
@@ -402,4 +402,4 @@ Copyright © 2026 George Stephanis.
   [GNU General Public License v3.0 or later](LICENSE) (GPL-3.0-or-later).
 - **Hardware:** the printable designs in [`hardware/`](hardware/) are licensed under the
   [CERN Open Hardware Licence v2 – Strongly Reciprocal](hardware/usb-c-power/LICENSE)
-  (CERN-OHL-S-2.0), which is the GPL-style licence for hardware designs.
+  (CERN-OHL-S-2.0), which is the GPL-style license for hardware designs.

@@ -86,13 +86,13 @@ _TODO: steps for removing the barrel jack, and where VBUS and GND solder onto th
 
 **Resin (SLA) version:** _TODO._
 
-## Licence
+## License
 
 Copyright © 2026 George Stephanis.
 
 These designs are licensed under the **CERN Open Hardware Licence Version 2 – Strongly Reciprocal**
 (CERN-OHL-S-2.0); the full text is in [`LICENSE`](LICENSE). You may use, modify, print and sell them.
 If you distribute modified designs, or products made from them, you must make your design source available
-under the same licence. For these parts, the design source is the Fusion 360 file.
+under the same license. For these parts, the design source is the Fusion 360 file.
 
 Source location: <https://github.com/georgestephanis/Wyse3040/tree/main/hardware/usb-c-power>
