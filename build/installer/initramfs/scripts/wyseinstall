@@ -105,7 +105,8 @@ wyse_find_media() {
 			# Ventoy and the like: an .iso file on the drive's filesystem.
 			find "$WYSE_MEDIA" -maxdepth 3 -iname '*.iso' 2>/dev/null >/run/wyse-isos
 			while IFS= read -r _iso; do
-				mount -o ro,loop "$_iso" "$WYSE_ISO" 2>/dev/null || continue
+				# ponytail: -t iso9660 stops the kernel from guessing every filesystem type and logging each failure
+				mount -t iso9660 -o ro,loop "$_iso" "$WYSE_ISO" 2>/dev/null || continue
 				if wyse_is_ours "$WYSE_ISO"; then
 					echo "$_dev: ${_iso#"$WYSE_MEDIA"/}" >/run/wyse-source
 					return 0
@@ -158,7 +159,7 @@ mountroot() {
 
 	product=$(cat /sys/class/dmi/id/product_name 2>/dev/null)
 	echo "  Machine:  ${product:-unknown}"
-	echo "  Target:   $target ($((bytes / 1000000)) MB)"
+	echo "  Target:   $target ($((bytes / 1048576)) MiB)"
 	echo "  Image:    $((want_size / 1048576)) MiB"
 	case "$product" in
 		*3040*) ;;
@@ -180,7 +181,7 @@ mountroot() {
 
 	echo
 	echo "  Writing the image. This takes a few minutes..."
-	/bin/xz-full -dc "$img" | /bin/dd-full of="$target" bs=4M conv=fsync status=progress ||
+	/bin/xz-full -T0 -dc "$img" | /bin/dd-full of="$target" bs=4M conv=fsync status=progress ||
 		wyse_fail "Writing failed. The eMMC may hold a partial image; run the installer again."
 
 	echo "  Verifying..."
