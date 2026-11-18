@@ -7,6 +7,7 @@
   <!-- Right-click the desktop, or the "Menu" button on the taskbar. -->
   <RootMenu onroot="3">
     <Program label="Remmina">remmina</Program>
+    <Program label="VLC media player">vlc</Program>
     <!-- @STREAMING_APPS@ -->
     <Program label="Terminal">xterm</Program>
     <Separator/>
@@ -22,7 +23,8 @@
   </Tray>
 
   <Desktops width="1" height="1">
-    <Background type="solid">#1f2430</Background>
+    <!-- Vertical gradient, top to bottom. -->
+    <Background type="gradient">#141a26:#2e4a6b</Background>
   </Desktops>
 
   <WindowStyle><Font>DejaVu Sans-10</Font></WindowStyle>

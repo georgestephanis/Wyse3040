@@ -74,6 +74,12 @@ alsa-utils
 remmina
 remmina-plugin-rdp
 remmina-plugin-vnc
+
+# --- Media player ---
+# Native VLC, so it uses the host i965 VA-API driver. It finds DLNA/UPnP
+# servers itself; vlc-plugin-samba adds Windows (SMB) share browsing.
+vlc
+vlc-plugin-samba
 remmina-plugin-spice
 
 # --- Game streaming (apps come from Flathub; see WYSE_FLATPAKS) ---

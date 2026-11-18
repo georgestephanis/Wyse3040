@@ -128,10 +128,11 @@ variant, and confirm it with a multimeter.** The wrong voltage can damage the 30
 
   Pick which ones you want with `WYSE_FLATPAKS` in `config/build.env`; leave it empty for none.
   `steam-devices` provides the device permissions for Steam controllers and other gamepads. The apps
-  bring their own runtimes, which take up most of the image's size. Flatpak doesn't install the Intel
-  VA-API driver extension on its own, so the build adds `org.freedesktop.Platform.VAAPI.Intel` (i965)
-  for each runtime branch. Smooth streaming depends on the HD 400 decoding H.264 in hardware through
-  it, which hasn't been checked on a real 3040 yet.
+  bring their own runtimes, which take up most of the image's size. For hardware H.264 decoding, a
+  system-wide Flatpak override hands the apps the host's `i965` VA-API driver (read-only `host-os`,
+  plus `LIBVA_DRIVERS_PATH`/`LIBVA_DRIVER_NAME`). Flathub's `org.freedesktop.Platform.VAAPI.Intel`
+  extension only ships `iHD`, which doesn't support Cherry Trail. On a real 3040, VA-API initialises
+  with `i965` inside the Moonlight sandbox.
 - **Graphics:** `i915` with the modesetting X driver. VA-API uses `i965-va-driver`, the Intel VA-API
   driver that supports Cherry Trail; `intel-media` doesn't cover it.
 - **No `x11-xserver-utils`,** because it drags in a C preprocessor. Screen blanking is turned off and the

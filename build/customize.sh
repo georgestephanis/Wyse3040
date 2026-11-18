@@ -46,13 +46,12 @@ if [ -n "${WYSE_FLATPAKS:-}" ]; then
   flatpak config --system --set languages en
   # shellcheck disable=SC2086
   flatpak install --system --noninteractive --assumeyes flathub $WYSE_FLATPAKS
-  # Hardware video decoding inside the apps: Flatpak doesn't pull the Intel
-  # VA-API extension (which has i965, the driver Cherry Trail needs) on its
-  # own. Install it for each freedesktop runtime branch in use; the KDE
-  # runtime is built on the same branch and picks it up too.
-  for branch in $(flatpak list --system --runtime --columns=ref | sed -n 's|^org\.freedesktop\.Platform/x86_64/||p' | sort -u); do
-    flatpak install --system --noninteractive --assumeyes flathub "runtime/org.freedesktop.Platform.VAAPI.Intel/x86_64/$branch"
-  done
+  # Hardware video decoding inside the apps. Flathub's VAAPI.Intel extension
+  # only ships iHD, which doesn't support Cherry Trail, so hand the sandboxes
+  # the host's i965 driver instead (host-os mounts /usr at /run/host/usr).
+  flatpak override --system --filesystem=host-os:ro \
+    --env=LIBVA_DRIVERS_PATH=/run/host/usr/lib/x86_64-linux-gnu/dri \
+    --env=LIBVA_DRIVER_NAME=i965
   for app in $WYSE_FLATPAKS; do
     case "$app" in
       com.valvesoftware.SteamLink)      label="Steam Link" ;;
