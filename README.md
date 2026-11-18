@@ -185,7 +185,9 @@ the device itself.
 ## Building the image
 
 You need Docker. Everything runs in containers, so there's nothing else to install on the host. On Apple
-Silicon, the builder runs as an emulated `linux/amd64` container, and a build takes a while.
+Silicon, the builder runs as an emulated `linux/amd64` container. Use Rosetta for that, not QEMU: with
+Colima, `colima start --vm-type vz --vz-rosetta`. Under QEMU the build is slow and segfaults at random.
+Under Rosetta it takes about 10 minutes, plus another 10 for `make test-installer`.
 
 1. Give the image an admin login. The build refuses to run without one. Put your SSH public key(s) in
    `local/authorized_keys`:
