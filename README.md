@@ -8,6 +8,22 @@ connections to your servers. It can also stream games over your LAN with Steam L
 PlayStation Remote Play. The image is trimmed to the 3040's own hardware. This repo also has a
 3D-printable [USB-C power mod](hardware/usb-c-power/).
 
+### What's included
+
+Everything is on the desktop menu (right-click, or **Menu** on the taskbar).
+
+| App | Connects to | Protocols |
+|---|---|---|
+| **Remmina** (starts on boot) | Windows, Linux and Mac desktops; servers | RDP (FreeRDP 3), VNC, SPICE, SSH |
+| **VLC** | Media on your network | DLNA/UPnP discovery, SMB (Windows shares), HTTP/HLS/RTSP streams |
+| **Moonlight** | A PC running [Sunshine](https://github.com/LizardByte/Sunshine) | Moonlight/GameStream, H.264 decoded in hardware |
+| **Steam Link** | Steam on a PC | Steam Remote Play |
+| **chiaki-ng** | PlayStation 4/5 | PlayStation Remote Play |
+| **Terminal** | Local shell | `xterm` |
+
+For admin access over the network there's an SSH server (the `admin` user, with the key or password you set at build time). Moonlight, Steam
+Link and chiaki-ng are optional; pick them with `WYSE_FLATPAKS` in `config/build.env`.
+
 > **Status:** the image builds, and it boots to the Remmina kiosk session under QEMU (`make test`). The
 > installer ISO passes an unattended install in QEMU (`make test-installer`). On a real 3040 the
 > installer flashes the eMMC and the unit boots to the kiosk desktop at 1080p on a 4K TV; the
